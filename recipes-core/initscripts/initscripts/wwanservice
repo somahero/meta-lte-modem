@@ -1,0 +1,33 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          wwanservice
+# Required-Start:    $local_fs mountvirtfs
+# Required-Stop:     $local_fs
+# Default-Start:     S
+# Default-Stop:      0 6
+# Short-Description: Setup/teardown wwan service
+# Description:       Setup/teardown wwan service
+### END INIT INFO
+
+. /etc/default/rcS
+
+case "$1" in
+	start|"")
+		qmi-network /dev/cdc-wdm0  start
+		
+		udhcpc -i wwan0
+		
+		iptables -t nat -A POSTROUTING -o wwan0 -j MASQUERADE
+		iptables -A FORWARD -i eth0 -o wwan0 -m state --state RELATED,ESTABLISHED -j ACCEPT
+		iptables -A FORWARD -i wwan0 -o eth0 -j ACCEPT
+		;;
+	stop)
+		qmi-network /dev/cdc-wdm0  stop
+		;;
+	*)
+		echo "Usage: urandom {start|stop}" >&2
+		exit 1
+		;;
+esac
+
+exit 0
